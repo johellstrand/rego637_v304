@@ -30,51 +30,56 @@ typedef enum {
     REGO_TYPE_END
 } RegoRegType;
 
-typedef struct _tRegoRegisters
+typedef struct
 {
-    char name[25];
-    unsigned short regNum_type1;
-    unsigned short regNum_type2;
-    unsigned short regNum_type3;
+    char        name[25];
+    uint16_t    reg;
     RegoRegType type;
-    float lastTemp;
-    int lastValue;
-    time_t lastSent;
-} RegoRegisters;
+    RegoCommandType command_type;
+    uint16_t    request_len;
+    uint16_t    expected_reply_len;
+    uint16_t    reply_value;
+    time_t      time;
+} RegoCommand;
 
+static RegoCommand rego_commands[] = {
+    { "GT1 Radiator",        0x0209, REGO_TYPE_TEMP,    RC_read_from_system_register, 9, 5, 0, 0 },
+    { "GT2 Out",             0x020A, REGO_TYPE_TEMP,    RC_read_from_system_register, 9, 5, 0, 0 },
+    { "GT3 Hot water",       0x020B, REGO_TYPE_TEMP,    RC_read_from_system_register, 9, 5, 0, 0 },
+    { "GT4 Forward",         0x020C, REGO_TYPE_TEMP,    RC_read_from_system_register, 9, 5, 0, 0 },
+    { "GT5 Room",            0x020D, REGO_TYPE_TEMP,    RC_read_from_system_register, 9, 5, 0, 0 },
+    { "GT6 Compressor",      0x020E, REGO_TYPE_TEMP,    RC_read_from_system_register, 9, 5, 0, 0 },
+    { "GT8 Hot fluid out",   0x020F, REGO_TYPE_TEMP,    RC_read_from_system_register, 9, 5, 0, 0 },
+    { "GT9 Hot fluid in",    0x0210, REGO_TYPE_TEMP,    RC_read_from_system_register, 9, 5, 0, 0 },
+    { "GT10 Cold fluid in",  0x0211, REGO_TYPE_TEMP,    RC_read_from_system_register, 9, 5, 0, 0 },
+    { "GT11 Cold fluid out", 0x0212, REGO_TYPE_TEMP,    RC_read_from_system_register, 9, 5, 0, 0 },
+    { "GT3x Ext hot water",  0x0213, REGO_TYPE_TEMP,    RC_read_from_system_register, 9, 5, 0, 0 },
+    { "GT1 Target",          0x006E, REGO_TYPE_TEMP,    RC_read_from_system_register, 9, 5, 0, 0 },
+    { "GT1 On",              0x006F, REGO_TYPE_TEMP,    RC_read_from_system_register, 9, 5, 0, 0 },
+    { "GT1 Off",             0x0070, REGO_TYPE_TEMP,    RC_read_from_system_register, 9, 5, 0, 0 },
+    { "GT3 On",              0x0073, REGO_TYPE_TEMP,    RC_read_from_system_register, 9, 5, 0, 0 },
+    { "GT3 Off",             0x0074, REGO_TYPE_TEMP,    RC_read_from_system_register, 9, 5, 0, 0 },
+    { "GT4 Target",          0x006D, REGO_TYPE_TEMP,    RC_read_from_system_register, 9, 5, 0, 0 },
+    { "P3 Cold fluid",       0x01FD, REGO_TYPE_STATUS,  RC_read_from_system_register, 9, 5, 0, 0 },
+    { "Compressor",          0x01FE, REGO_TYPE_STATUS,  RC_read_from_system_register, 9, 5, 0, 0 },
+    { "Xtra 3kW",            0x01FF, REGO_TYPE_STATUS,  RC_read_from_system_register, 9, 5, 0, 0 },
+    { "Xtra 6kW",            0x0200, REGO_TYPE_STATUS,  RC_read_from_system_register, 9, 5, 0, 0 },
+    { "P1 Radiator",         0x0203, REGO_TYPE_STATUS,  RC_read_from_system_register, 9, 5, 0, 0 },
+    { "P2 Heat fluid",       0x0204, REGO_TYPE_STATUS,  RC_read_from_system_register, 9, 5, 0, 0 },
+    { "Three-way valve",     0x0205, REGO_TYPE_STATUS,  RC_read_from_system_register, 9, 5, 0, 0 },
+    { "Alarm",               0x0206, REGO_TYPE_STATUS,  RC_read_from_system_register, 9, 5, 0, 0 },
+    { "Heat-Power",          0x006C, REGO_TYPE_COUNTER, RC_read_from_system_register, 9, 5, 0, 0 },
+    { "Heatcurve",           0x0000, REGO_TYPE_COUNTER, RC_read_from_system_register, 9, 5, 0, 0 },
+    { "Heatcurve fine adj.", 0x0001, REGO_TYPE_COUNTER, RC_read_from_system_register, 9, 5, 0, 0 },
 
-RegoRegisters g_allRegisters[] = {
-    { "GT1 Radiator",           0x0209,	0x020B,	0x020D,	REGO_TYPE_TEMP,         -50.0, -1, 0 },
-    { "GT2 Out",		        0x020A,	0x020C,	0x020E,	REGO_TYPE_TEMP,         -50.0, -1, 0 },
-    { "GT3 Hot water",	        0x020B,	0x020D,	0x020F,	REGO_TYPE_TEMP,         -50.0, -1, 0 },
-    { "GT4 Forward",	        0x020C,	0x020E,	0x0210,	REGO_TYPE_TEMP,         -50.0, -1, 0 },
-    { "GT5 Room",			    0x020D,	0x020F,	0x0211,	REGO_TYPE_TEMP,         -50.0, -1, 0 },
-    { "GT6 Compressor",	        0x020E,	0x0210,	0x0212,	REGO_TYPE_TEMP,         -50.0, -1, 0 },
-    { "GT8 Hot fluid out",      0x020F,	0x0211,	0x0213,	REGO_TYPE_TEMP,         -50.0, -1, 0 },
-    { "GT9 Hot fluid in",		0x0210,	0x0212,	0x0214,	REGO_TYPE_TEMP,         -50.0, -1, 0 },
-    { "GT10 Cold fluid in",		0x0211,	0x0213,	0x0215,	REGO_TYPE_TEMP,         -50.0, -1, 0 },
-    { "GT11 Cold fluid out",	0x0212,	0x0214,	0x0216,	REGO_TYPE_TEMP,         -50.0, -1, 0 },
-    { "GT3x Ext hot water",		0x0213, 0x0215, 0x0217,	REGO_TYPE_TEMP,         -50.0, -1, 0 },
-    { "P3 Cold fluid",	    	0x01FD,	0x01FF,	0x0201,	REGO_TYPE_STATUS,       -50.0, -1, 0 },
-    { "Compressor",				0x01FE,	0x0200,	0x0202,	REGO_TYPE_STATUS,       -50.0, -1, 0 },
-    { "Add heat 1",     		0x01FF,	0x0201,	0x0203,	REGO_TYPE_STATUS,       -50.0, -1, 0 },
-    { "Add heat 2",		        0x0200,	0x0202,	0x0204,	REGO_TYPE_STATUS,       -50.0, -1, 0 },
-    { "P1 Radiator",    		0x0203,	0x0205,	0x0207,	REGO_TYPE_STATUS,       -50.0, -1, 0 },
-    { "P2 Heat fluid",  		0x0204, 0x0206, 0x0208, REGO_TYPE_STATUS,       -50.0, -1, 0 },
-    { "Three-way valve",        0x0205, 0x0207, 0x0209, REGO_TYPE_STATUS,       -50.0, -1, 0 },
-    { "Alarm",                  0x0206, 0x0208, 0x020A, REGO_TYPE_STATUS,       -50.0, -1, 0 },
-    { "Operating hours",        0x0046, 0x0048, 0x004A, REGO_TYPE_COUNTER,      -50.0, -1, 0 },
-    { "Radiator hours",         0x0048, 0x004A, 0x004C, REGO_TYPE_COUNTER,      -50.0, -1, 0 },
-    { "Hot water hours",        0x004A, 0x004C, 0x004E, REGO_TYPE_COUNTER,      -50.0, -1, 0 },
-    { "GT1 Target",             0x006E,	0x006E,	0x006E,	REGO_TYPE_TEMP,         -50.0, -1, 0 },
-    { "GT3 Target",             0x002B,	0x002B,	0x002B,	REGO_TYPE_TEMP,         -50.0, -1, 0 },
-    { "GT4 Target",             0x006D,	0x006D,	0x006D,	REGO_TYPE_TEMP,         -50.0, -1, 0 },
-    { "",                            0,      0,      0, REGO_TYPE_NONE,             0,  0, 0}
 };
+
+
+
 
 typedef union
 {
-    unsigned char raw[9];
+    uint8_t raw[9];
     struct
     {
         uint8_t address; // 0x81
@@ -85,9 +90,40 @@ typedef union
     } data;
 } RegoRequest;
 
+// returns bytes written.
+static int send_request( int fd, RegoCommand* rc_p )
+{
+    RegoRequest req;
+    
+    if( sizeof( req ) != 9 ) exit( 1 );
+
+    memset( &req, 0, sizeof( req ) );
+
+    req.data.address = 0x81;
+    req.data.command_type = rc_p->command_type;
+    
+    req.data.regNum[0] = (rc_p->reg & 0xC000) >> 14 ;
+    req.data.regNum[1] = (rc_p->reg & 0x3F80) >> 7 ;
+    req.data.regNum[2] = rc_p->reg & 0x007F;
+    
+    for ( int i = 2; i < 8; i++ )
+        req.data.crc ^= req.raw[ i ];
+    
+    
+    printf("Request: ");
+    for(int i = 0; i < sizeof( req ); i++ )
+    {
+        printf("%02x", req.raw[i] );
+    }
+    puts("");
+    
+    rc_p->time = time( NULL );
+    return write( fd, &req, sizeof( req ) );
+}
+
 typedef union
 {
-    char raw[5];
+    uint8_t raw[5];
     struct
     {
         uint8_t address; // 0x01
@@ -95,31 +131,6 @@ typedef union
         uint8_t crc;
     } data;
 } Rego5bReply;
-
-
-static void format_request( RegoRequest* rp, RegoCommandType ct, unsigned short reg)
-{
-    memset( rp, 0, sizeof( *rp ) );
-    if( sizeof( *rp ) != 9 ) exit( 1 );
-    rp->data.address = 0x81;
-    rp->data.command_type = ct;
-    
-    rp->data.regNum[0] = (reg & 0xC000) >> 14 ;
-    rp->data.regNum[1] = (reg & 0x3F80) >> 7 ;
-    rp->data.regNum[2] = reg & 0x007F;
-    
-    for ( int i = 2; i < 8; i++ )
-        rp->data.crc ^= rp->raw[ i ];
-    
-    
-    printf("Request: ");
-    for(int i = 0; i < sizeof( *rp ); i++ )
-    {
-        printf("%02x", rp->raw[i] );
-    }
-    puts("");
-    
-}
 
 
 static int parse_5byte_reply(const Rego5bReply* rp, int16_t* value )
@@ -209,39 +220,36 @@ static int open_serial(const char* port_p)
 
 int main( int argc, char* argv[] )
 {
-    RegoRequest req;
+    int exit_status = EXIT_FAILURE;
     
     int fd = open_serial( "/dev/ttyUSB0" );
     
   //  if( fd >= 0 )
     {
+        RegoCommand* rc_p = &rego_commands[1]; // GT2.
+        int bytes_written = send_request( fd, rc_p );
         
-        format_request( &req, RC_read_from_system_register, 0x0001 ); //GT2 out
-        
-        int  bytes_written  = 0;      /* Value for storing the number of bytes written to the port */
-        
-        bytes_written = write( fd, &req, sizeof( req ) ) ;
-        
+        if( bytes_written == rc_p->request_len )
         {
-            Rego5bReply rpy;
-            int16_t     v;
+            uint8_t buff[100];
             
-            rpy.data.address = 0x01;
-            rpy.data.value[0] = 0;
-            rpy.data.value[1] = 0x02;
-            rpy.data.value[2] = 0x2c;
-            rpy.data.crc = 0;
-            
-            for ( int i = 0; i < sizeof( rpy.data.value ); i++ )
-                rpy.data.crc ^= rpy.data.value[ i ];
-            
-            
-            
-            if( parse_5byte_reply( &rpy, &v ) )
-                printf("Value is %d\n", v );
+            int bytes_read = read( fd, buff, sizeof( buff ) );
+            if( bytes_read == rc_p->expected_reply_len )
+            {
+                if( bytes_read == 5 )
+                {
+                    int16_t value;
+                    if( parse_5byte_reply( (const Rego5bReply*) buff, &value ) )
+                    {
+                        printf("Current value of %s is %d\n", rc_p->name, value );
+                        exit_status = EXIT_SUCCESS;
+                    }
+                    else
+                        printf("Parse of reply to %s failed\n", rc_p->name );
+                }
+            }
         }
         close( fd );
-        return EXIT_SUCCESS;
     }
-    return EXIT_FAILURE;
+    return exit_status;
 }
