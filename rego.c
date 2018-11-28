@@ -20,7 +20,6 @@ typedef enum {
     RC_read_prev_error_line      = 0x42  // response 42char text line
 } RegoCommandType;
 
-
 typedef uint8_t RegoCommandType_u8;
 
 typedef enum {
