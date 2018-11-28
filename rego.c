@@ -38,7 +38,7 @@ typedef struct
     RegoCommandType command_type;
     uint16_t    request_len;
     uint16_t    expected_reply_len;
-    uint16_t    reply_value;
+    int16_t     reply_value;
     time_t      time;
 } RegoCommand;
 
@@ -238,10 +238,9 @@ int main( int argc, char* argv[] )
             {
                 if( bytes_read == 5 )
                 {
-                    int16_t value;
-                    if( parse_5byte_reply( (const Rego5bReply*) buff, &value ) )
+                    if( parse_5byte_reply( (const Rego5bReply*) buff, &rc_p->reply_value ) )
                     {
-                        printf("Current value of %s is %d\n", rc_p->name, value );
+                        printf("Current value of %s is %d\n", rc_p->name, rc_p->reply_value );
                         exit_status = EXIT_SUCCESS;
                     }
                     else
