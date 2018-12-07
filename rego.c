@@ -81,7 +81,7 @@ static RegoCommand rego_commands[] = {
     { "LED Varmvatten",      0x0015, REGO_TYPE_STATUS,     RC_read_from_front_panel,     9, 5, 0, 0, 0 },
     { "LED Alarm",           0x0016, REGO_TYPE_STATUS,     RC_read_from_front_panel,     9, 5, 0, 0, 0 },
     { "Firmware",            0x0000, REGO_TYPE_STATUS,     RC_read_firmware_version,     9, 5, 0, 0, 0 },
-
+    
 };
 
 
@@ -106,9 +106,9 @@ static int send_request( int fd, RegoCommand* rc_p )
     RegoRequest req;
     
     if( sizeof( req ) != 9 ) exit( 1 );
-
+    
     memset( &req, 0, sizeof( req ) );
-
+    
     req.data.address = 0x81;
     req.data.command_type = rc_p->command_type;
     
@@ -183,20 +183,20 @@ typedef union
 
 static int parse_42byte_reply(const Rego42bReply* rp, int16_t* value )
 {
-  //  uint8_t crc = 0;
+    //  uint8_t crc = 0;
     
-    if( sizeof( *rp ) != 5 ) exit( 1 );
+    if( sizeof( *rp ) != 42 ) exit( 1 );
     
     *value = 0;
     if( rp->data.address != 0x01 ) return 0;
     
-/*
-    for ( int i = 0; i < sizeof( rp->data.value); i++ ) crc ^= rp->data.value[i];
-    
-    if( crc != rp->data.crc ) return 0;
-    
-    *value = (rp->data.value[0] << 14) | (rp->data.value[1] << 7) | rp->data.value[2];
-*/
+    /*
+     for ( int i = 0; i < sizeof( rp->data.value); i++ ) crc ^= rp->data.value[i];
+     
+     if( crc != rp->data.crc ) return 0;
+     
+     *value = (rp->data.value[0] << 14) | (rp->data.value[1] << 7) | rp->data.value[2];
+     */
     printf("Reply: ");
     for(int i = 0; i < sizeof( *rp ); i++ )
     {
@@ -244,7 +244,7 @@ static int open_serial(const char* port_p)
     SerialPortSettings.c_cflag &= ~CSIZE;     /* Clears the mask for setting the data size             */
     SerialPortSettings.c_cflag |=  CS8;      /* Set the data bits = 8                                 */
     
-//    SerialPortSettings.c_cflag &= ~CRTSCTS;       /* No Hardware flow Control                         */
+    //    SerialPortSettings.c_cflag &= ~CRTSCTS;       /* No Hardware flow Control                         */
     SerialPortSettings.c_cflag |= CREAD | CLOCAL; /* Enable receiver,Ignore Modem Control lines       */
     
     
@@ -269,33 +269,33 @@ int main( int argc, char* argv[] )
 {
     int exit_status = EXIT_FAILURE;
     int idx = 1;
-
+    
     if( argc > 1 )
     {
         idx = -1;
-	for( int i = 0; idx == -1 && i < sizeof( rego_commands ) / sizeof( rego_commands[0] ); i++ )
-	{
-		if( !strcmp( argv[1], rego_commands[i].name ) ) idx = i;
-	}
+        for( int i = 0; idx == -1 && i < sizeof( rego_commands ) / sizeof( rego_commands[0] ); i++ )
+        {
+            if( !strcmp( argv[1], rego_commands[i].name ) ) idx = i;
+        }
         if( idx == -1 )
-	{
-		printf(" Invalid option %s\n",  argv[1] ) ;
-		return exit_status;
-	}
-	printf( "Continuing with %s, \n", rego_commands[idx].name );
+        {
+            printf(" Invalid option %s\n",  argv[1] ) ;
+            return exit_status;
+        }
+        printf( "Continuing with %s, \n", rego_commands[idx].name );
     }
     else
     {
-	puts("one of these commands must be entered:");
+        puts("one of these commands must be entered:");
         for( int i = 0; i < sizeof( rego_commands ) / sizeof( rego_commands[0] ); i++ )
         {
-                puts( rego_commands[i].name );
+            puts( rego_commands[i].name );
         }
         return exit_status;
-    }    
-
+    }
+    
     int fd = open_serial( "/dev/ttyUSB0" );
-
+    
     puts("");
     
     if( fd >= 0 )
@@ -308,29 +308,29 @@ int main( int argc, char* argv[] )
             uint8_t buff[100];
             
             {
-		fd_set rfds;
-    		struct timeval tv;
-    		int retval;
-
-   		/* Watch stdin (fd 0) to see when it has input. */
-    		FD_ZERO(&rfds);
-    		FD_SET(fd, &rfds);
-
-   		/* Wait up to five seconds. */
-    		tv.tv_sec = 2;
-    		tv.tv_usec = 0;
-
-   		retval = select(1, &rfds, NULL, NULL, &tv);
-    		/* Don't rely on the value of tv now! */
-
-   		if (retval == -1)
-        		perror("select()");
-    		else if (retval)
-        		printf("Data is available now.\n");
-        	/* FD_ISSET(0, &rfds) will be true. */
-    		else
-        		printf("..\n");
-	    }            
+                fd_set rfds;
+                struct timeval tv;
+                int retval;
+                
+                /* Watch stdin (fd 0) to see when it has input. */
+                FD_ZERO(&rfds);
+                FD_SET(fd, &rfds);
+                
+                /* Wait up to five seconds. */
+                tv.tv_sec = 2;
+                tv.tv_usec = 0;
+                
+                retval = select(1, &rfds, NULL, NULL, &tv);
+                /* Don't rely on the value of tv now! */
+                
+                if (retval == -1)
+                    perror("select()");
+                else if (retval)
+                    printf("Data is available now.\n");
+                /* FD_ISSET(0, &rfds) will be true. */
+                else
+                    printf("..\n");
+            }
             int bytes_read = read( fd, buff, sizeof( buff ) );
             if( bytes_read == rc_p->expected_reply_len )
             {
@@ -353,7 +353,7 @@ int main( int argc, char* argv[] )
                     }
                     else
                         printf("Parse of reply to %s failed\n", rc_p->name );
-
+                    
                 }
                 else
                     printf("Unexpectedly only got %d bytes\n", bytes_read );
