@@ -6,8 +6,8 @@
 #include <termios.h> /* POSIX Terminal Control Definitions */
 #include <unistd.h>  /* UNIX Standard Definitions        */
 #include <errno.h>   /* ERROR Number Definitions           */
-
-
+#include <stdint.h>
+#include <sys/select.h>
 typedef enum {
     RC_read_from_front_panel     = 0,    // response 5 character, 16 bit number
     RC_write_to_front_panel      = 1,    // 1 character, confirm
@@ -244,7 +244,7 @@ static int open_serial(const char* port_p)
     SerialPortSettings.c_cflag &= ~CSIZE;     /* Clears the mask for setting the data size             */
     SerialPortSettings.c_cflag |=  CS8;      /* Set the data bits = 8                                 */
     
-    SerialPortSettings.c_cflag &= ~CRTSCTS;       /* No Hardware flow Control                         */
+//    SerialPortSettings.c_cflag &= ~CRTSCTS;       /* No Hardware flow Control                         */
     SerialPortSettings.c_cflag |= CREAD | CLOCAL; /* Enable receiver,Ignore Modem Control lines       */
     
     
@@ -268,18 +268,69 @@ static int open_serial(const char* port_p)
 int main( int argc, char* argv[] )
 {
     int exit_status = EXIT_FAILURE;
-    
-    int fd = open_serial( "/dev/ttyUSB0" );
-    
-  //  if( fd >= 0 )
+    int idx = 1;
+
+    if( argc > 1 )
     {
-        RegoCommand* rc_p = &rego_commands[sizeof( rego_commands)/sizeof(*rc_p)-1]; // GT2.
+        idx = -1;
+	for( int i = 0; idx == -1 && i < sizeof( rego_commands ) / sizeof( rego_commands[0] ); i++ )
+	{
+		if( !strcmp( argv[1], rego_commands[i].name ) ) idx = i;
+	}
+        if( idx == -1 )
+	{
+		printf(" Invalid option %s\n",  argv[1] ) ;
+		return exit_status;
+	}
+	printf( "Continuing with %s, \n", rego_commands[idx].name );
+    }
+    else
+    {
+	puts("one of these commands must be entered:");
+        for( int i = 0; i < sizeof( rego_commands ) / sizeof( rego_commands[0] ); i++ )
+        {
+                puts( rego_commands[i].name );
+        }
+        return exit_status;
+    }    
+
+    int fd = open_serial( "/dev/ttyUSB0" );
+
+    puts("");
+    
+    if( fd >= 0 )
+    {
+        RegoCommand* rc_p = &rego_commands[idx]; // GT2.
         int bytes_written = send_request( fd, rc_p );
         
         if( bytes_written == rc_p->request_len )
         {
             uint8_t buff[100];
             
+            {
+		fd_set rfds;
+    		struct timeval tv;
+    		int retval;
+
+   		/* Watch stdin (fd 0) to see when it has input. */
+    		FD_ZERO(&rfds);
+    		FD_SET(fd, &rfds);
+
+   		/* Wait up to five seconds. */
+    		tv.tv_sec = 2;
+    		tv.tv_usec = 0;
+
+   		retval = select(1, &rfds, NULL, NULL, &tv);
+    		/* Don't rely on the value of tv now! */
+
+   		if (retval == -1)
+        		perror("select()");
+    		else if (retval)
+        		printf("Data is available now.\n");
+        	/* FD_ISSET(0, &rfds) will be true. */
+    		else
+        		printf("..\n");
+	    }            
             int bytes_read = read( fd, buff, sizeof( buff ) );
             if( bytes_read == rc_p->expected_reply_len )
             {
@@ -304,10 +355,13 @@ int main( int argc, char* argv[] )
                         printf("Parse of reply to %s failed\n", rc_p->name );
 
                 }
+                else
+                    printf("Unexpectedly only got %d bytes\n", bytes_read );
             }
             else
             {
                 printf("Unexpectedly only got %d bytes\n", bytes_read );
+                if( bytes_read == -1 ) perror( "read failed");
             }
         }
         close( fd );
