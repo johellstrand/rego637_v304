@@ -1,1 +1,3 @@
+bin/rego_modify_heatcurve
 bin/rego
+*.o
