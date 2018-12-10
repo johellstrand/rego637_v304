@@ -1,14 +1,27 @@
-//#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>   /* File Control Definitions           */
 #include <termios.h> /* POSIX Terminal Control Definitions */
 #include <unistd.h>  /* UNIX Standard Definitions        */
-//#include <errno.h>   /* ERROR Number Definitions           */
 #include <stdint.h>
 #include <sys/select.h>
 #include "rego_funcs.h"
+
+typedef enum {
+    RC_read_from_front_panel     = 0,    // response 5 character, 16 bit number
+    RC_write_to_front_panel      = 1,    // 1 character, confirm
+    RC_read_from_system_register = 2,    // response 5 character, 16 bit number
+    RC_write_to_system_register  = 3,    // 1 character, confirm
+    RC_read_from_timer_resgister = 4,    // response 5 character, 16 bit number
+    RC_write_to_timer_register   = 5,    // 1 character, confirm
+    RC_read_from_display         = 0x20, // response 42char text line
+    RC_read_last_error_line      = 0x40, // response 42char text line
+    RC_read_prev_error_line      = 0x42, // response 42char text line
+    RC_read_firmware_version     = 0x75  // response 5 character, 16 bit number
+} RegoCommandType;
+typedef uint8_t RegoCommandType_u8;
+
 
 
 int open_serial(const char* port_p)
@@ -69,7 +82,10 @@ int open_serial(const char* port_p)
     return fd;
 }
 
-
+void close_serial( int fd )
+{
+    close( fd );
+}
 
 void wait_for_response( int fd )
 {
@@ -135,7 +151,7 @@ typedef union
     } data;
 } Rego5bReply;
 
-static RegoRequest* format_request( RegoRequest* req_p, RegoCommandType ct, RegoRegister rego_register, int16_t value )
+static RegoRequest* format_request( RegoRequest* req_p, RegoCommandType ct, int rego_register, int16_t value )
 {
     if( sizeof( *req_p ) != 9 ) exit( 1 );
     
@@ -194,7 +210,7 @@ static void parse_1byte_reply( uint8_t* rpy_p )
     
 }
 // returns INT16_MIN on error.
-int16_t read_system_register( int fd, RegoRegister rr )
+int16_t read_system_register( int fd, RegoSystemRegister rr )
 {
     RegoRequest req;
     int16_t     returned_value;
@@ -218,7 +234,7 @@ int16_t read_system_register( int fd, RegoRegister rr )
 }
 
 
-void write_system_register( int fd, RegoRegister rr, int16_t value )
+void write_system_register( int fd, RegoSystemRegister rr, int16_t value )
 {
     RegoRequest req;
     uint8_t     response[100];
@@ -236,3 +252,80 @@ void write_system_register( int fd, RegoRegister rr, int16_t value )
     }
 }
 
+int16_t read_front_panel( int fd, RegoFrontPanel rr )
+{
+    RegoRequest req;
+    int16_t     returned_value;
+    int16_t     value = INT16_MIN;
+    uint8_t     response[100];
+    
+    format_request( &req, RC_read_from_front_panel, rr, 0 );
+    
+    int bytes_written = send_request( fd, &req );
+    
+    if( bytes_written == sizeof( req ) )
+    {
+        wait_for_response( fd );
+        
+        int bytes_read = serial_read( fd, response, sizeof( response ) );
+        if( bytes_read == 5 )
+            if( parse_5byte_reply( (const Rego5bReply*) response, &returned_value ) ) value = returned_value;
+    }
+    
+    return value;
+}
+
+static int pair_to_int( const uint8_t* p )
+{
+    return 10* (*(p+1)) + (*(p+3));
+}
+static time_t parse_datetime( const uint8_t* dt_p )
+{
+    struct tm dt;
+    
+    memset( &dt, 0, sizeof( dt ) );
+    dt.tm_year = 100 + pair_to_int( dt_p );
+    dt_p +=4;
+    dt.tm_mon = pair_to_int( dt_p ) - 1;
+    dt_p +=4;
+    dt.tm_mday = pair_to_int( dt_p );
+    dt_p +=6;
+    
+    dt.tm_hour = pair_to_int( dt_p );
+    dt_p +=6;
+    dt.tm_min = pair_to_int( dt_p );
+    dt_p +=6;
+    dt.tm_sec = pair_to_int( dt_p );
+    dt_p +=6;
+    
+    time_t ret = mktime( &dt );
+    return ret;
+}
+
+
+int get_last_error( int fd, RegoError* re_p )
+{
+    RegoRequest req;
+    int16_t     value = 0;
+    uint8_t     response[100];
+    
+    format_request( &req, RC_read_last_error_line, 0, 0 );
+    
+    int bytes_written = send_request( fd, &req );
+    
+    if( bytes_written == sizeof( req ) )
+    {
+        wait_for_response( fd );
+        
+        int bytes_read = serial_read( fd, response, sizeof( response ) );
+        if( bytes_read == 42 )
+        {
+            value = 1;
+            re_p->code = response[2];
+            re_p->occurence_time = parse_datetime( response + 3 );
+        }
+    }
+    
+    return value;
+
+}

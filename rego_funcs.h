@@ -1,19 +1,10 @@
 #ifndef REGO_FUNC__H
 #define REGO_FUNC__H
 
-typedef enum {
-    RC_read_from_front_panel     = 0,    // response 5 character, 16 bit number
-    RC_write_to_front_panel      = 1,    // 1 character, confirm
-    RC_read_from_system_register = 2,    // response 5 character, 16 bit number
-    RC_write_to_system_register  = 3,    // 1 character, confirm
-    RC_read_from_timer_resgister = 4,    // response 5 character, 16 bit number
-    RC_write_to_timer_register   = 5,    // 1 character, confirm
-    RC_read_from_display         = 0x20, // response 42char text line
-    RC_read_last_error_line      = 0x40, // response 42char text line
-    RC_read_prev_error_line      = 0x42, // response 42char text line
-    RC_read_firmware_version     = 0x75  // response 5 character, 16 bit number
-} RegoCommandType;
-typedef uint8_t RegoCommandType_u8;
+#include <stdint.h>
+
+int open_serial(const char* port_p);
+void close_serial( int fd );
 
 
 typedef enum
@@ -46,24 +37,66 @@ typedef enum
     RR_heatpower          = 0x006C,
     RR_heatcurve          = 0x0000,
     RR_heatcurve_fineadj  = 0x0001,
+} RegoSystemRegister;
+#if 0
     RR_lasterror          = 0x0000,
     RR_lasterrorprev      = 0x0000,
+    RR_firmware           = 0x0000,
+} RegoRegister;
+#endif
+
+// returns INT16_MIN on error.
+int16_t read_system_register( int fd, RegoSystemRegister rr );
+void write_system_register( int fd, RegoSystemRegister rr, int16_t value );
+
+
+typedef enum
+{
     RR_ledpower           = 0x0012,
     RR_ledcompressor      = 0x0013,
     RR_ledextra           = 0x0014,
     RR_ledhotwater        = 0x0015,
     RR_ledalarm           = 0x0016,
-    RR_firmware           = 0x0000,
-} RegoRegister;
+} RegoFrontPanel;
+int16_t read_front_panel( int fd, RegoFrontPanel rr );
 
-int open_serial(const char* port_p);
 
-void wait_for_response( int fd );
+typedef enum
+{
+    REC_GT1SensorRadiatorReturn = 0,
+    REC_GTOutdoorSensor = 1,
+    REC_GT3HotWaterSensor = 2,
+    REC_GT4MixingValveSensor = 3,
+    REC_GT5RoomSensor = 4,
+    REC_GT6CompressorSensor = 5,
+    REC_GT8HeatFluidOut = 6,
+    REC_GT9HeatFluidIn = 7,
+    REC_GT10ColdFluidIn = 8,
+    REC_GT11ColdFluidOut = 9,
+    REC_CompressorCircuitSwitch = 10,
+    REC_ElectricalCassette = 11,
+    REC_MB2PumpSwith = 12,
+    REC_LowPressureSwitch = 13,
+    REC_HighPressureSwitch = 14,
+    REC_GT9HighReturn = 15,
+    REC_GT8HTFOutMax = 16,
+    REC_GT10HTFInUnderLimit = 17,
+    REC_GT11HTFOutUnderLimit = 18,
+    REC_GT6CompressorSuperhHear = 19,
+    REC_3PhaseIncorrect = 20,
+    REC_PowerFailure = 21,
+    REC_HighDelta = 22
+} RegoErrCode;
 
-// returns INT16_MIN on error.
-int16_t read_system_register( int fd, RegoRegister rr );
+#include <time.h>
+typedef struct
+{
+    time_t      occurence_time;
+    RegoErrCode code;
+} RegoError;
 
-void write_system_register( int fd, RegoRegister rr, int16_t value );
 
-int serial_read( int fd, uint8_t *buff_p, size_t buffsize);
+// returns 0 on failure.
+int get_last_error( int fd, RegoError* re_p );
+
 #endif

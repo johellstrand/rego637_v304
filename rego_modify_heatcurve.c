@@ -1,13 +1,5 @@
-#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>   /* File Control Definitions           */
-#include <termios.h> /* POSIX Terminal Control Definitions */
-#include <unistd.h>  /* UNIX Standard Definitions        */
-#include <errno.h>   /* ERROR Number Definitions           */
-#include <stdint.h>
-#include <sys/select.h>
 #include "rego_funcs.h"
 
 
@@ -77,12 +69,6 @@ static RegoCommand rego_commands[] = {
     
 };
 
-
-#endif
-
-
-#if 0
-
 typedef union
 {
     uint8_t raw[42];
@@ -111,7 +97,7 @@ int main( int argc, char* argv[] )
     int          exit_status = EXIT_FAILURE;
     int          delta_adjustment = 0;
     int16_t      current_value;
-    RegoRegister rr = RR_heatcurve;
+    RegoSystemRegister rr = RR_heatcurve;
     
     if( argc > 1 ) delta_adjustment = atoi( argv[1] );
     
@@ -141,7 +127,7 @@ int main( int argc, char* argv[] )
                 }
             }
         }
-        close( fd );
+        close_serial( fd );
     }
     return exit_status;
 }
