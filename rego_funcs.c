@@ -23,7 +23,57 @@ typedef enum {
 typedef uint8_t RegoCommandType_u8;
 
 
+int server_open_serial(const char* port_p)
+{
+    int fd;/*File Descriptor*/
+    
+    /*------------------------------- Opening the Serial Port -------------------------------*/
+    
+    /* Change /dev/ttyUSB0 to the one corresponding to your system */
+    
+    fd = open( port_p, O_RDWR | O_NOCTTY  );    /* ttyUSB0 is the FT232 based USB2SERIAL Converter   */
+    /* O_RDWR Read/Write access to serial port           */
+    /* O_NOCTTY - No terminal will control the process   */
+    /* O_NDELAY -Non Blocking Mode,Does not care about-  */
+    /* -the status of DCD line,Open() returns immediatly */
+    
+    if(fd == -1)
+    {
+        perror( "open failed" );
+        return -1;
+    }
+    else
+        printf("%s Opened Successfully\n", port_p );
+    
+    
+    /*---------- Setting the Attributes of the serial port using termios structure --------- */
+    
+    struct termios SerialPortSettings;    /* Create the structure                          */
+    
+    tcgetattr(fd, &SerialPortSettings);    /* Get the current attributes of the Serial port */
+    
+    cfsetispeed(&SerialPortSettings,B19200); /* Set Read  Speed as 9600                       */
+    cfsetospeed(&SerialPortSettings,B19200); /* Set Write Speed as 9600                       */
+    
+    cfmakeraw( &SerialPortSettings );
+    
+    SerialPortSettings.c_cc[VMIN] = 1;
+    SerialPortSettings.c_cc[VTIME] = 20;
 
+    // set vmin and vtime. vtime to 20 and vmin to 1.
+    // maybe use cfmakeraw() instaed?
+    
+    if((tcsetattr(fd,TCSANOW,&SerialPortSettings)) != 0) /* Set the attributes to the termios structure*/
+    {
+        close(fd);/* Close the Serial port */
+        printf("\n  ERROR ! in Setting attributes");
+        fd = -1;
+    }
+    else
+        printf("\n  BaudRate = 19200 \n  StopBits = 1 \n  Parity   = none");
+    
+    return fd;
+}
 int open_serial(const char* port_p)
 {
 	    int fd;/*File Descriptor*/
@@ -69,6 +119,9 @@ int open_serial(const char* port_p)
     SerialPortSettings.c_iflag &= ~(ICANON | ECHO | ECHOE | ISIG);  /* Non Cannonical mode                            */
     
     SerialPortSettings.c_oflag &= ~OPOST;/*No Output Processing*/
+    
+    // set vmin and vtime. vtime to 20 and vmin to 1.
+    // maybe use cfmakeraw() instaed?
     
     if((tcsetattr(fd,TCSANOW,&SerialPortSettings)) != 0) /* Set the attributes to the termios structure*/
     {
@@ -117,7 +170,7 @@ void wait_for_response( int fd )
 int serial_read( int fd, uint8_t *buff_p, size_t buffsize)
 {
     int bytes_read = read( fd, buff_p, buffsize );
-    printf("Reply: ");
+    printf("read: ");
     for(int i = 0; i < bytes_read; i++, buff_p++ )
     {
         printf("%02x", *buff_p );
@@ -176,7 +229,7 @@ static RegoRequest* format_request( RegoRequest* req_p, RegoCommandType ct, int 
 
 static int send_request( int fd, const RegoRequest* req_p )
 {
-    printf("Sending Request: ");
+    printf("write: ");
     for(int i = 0; i < sizeof( *req_p ); i++ )
     {
         printf("%02x", req_p->raw[i] );
@@ -229,6 +282,10 @@ int16_t read_system_register( int fd, RegoSystemRegister rr )
         if( bytes_read == 5 )
             if( parse_5byte_reply( (const Rego5bReply*) response, &returned_value ) ) value = returned_value;
     }
+    else
+    {
+        perror("write failed in read_system_register()");
+    }
     
     return value;
 }
@@ -249,6 +306,10 @@ void write_system_register( int fd, RegoSystemRegister rr, int16_t value )
         
         int bytes_read = serial_read( fd, response, sizeof( response ) );
         if( bytes_read == 1 ) parse_1byte_reply( response );
+    }
+    else
+    {
+        perror("write failed in write_system_register()");
     }
 }
 
@@ -271,7 +332,11 @@ int16_t read_front_panel( int fd, RegoFrontPanel rr )
         if( bytes_read == 5 )
             if( parse_5byte_reply( (const Rego5bReply*) response, &returned_value ) ) value = returned_value;
     }
-    
+    else
+    {
+        perror("write failed in read_front_panel()");
+    }
+
     return value;
 }
 
@@ -325,7 +390,10 @@ int get_last_error( int fd, RegoError* re_p )
             re_p->occurence_time = parse_datetime( response + 3 );
         }
     }
-    
+    else
+    {
+        perror("write failed in get_last_error()");
+    }
     return value;
 
 }

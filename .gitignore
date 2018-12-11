@@ -1,3 +1,4 @@
+bin/fake_osx_rego_server
 bin/rego_modify_heatcurve
 bin/rego
 *.o

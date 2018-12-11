@@ -16,3 +16,11 @@ if [ $? -eq 0 ]; then
 else
         echo "Failure!!!!";
 fi
+
+gcc -Wall -std=c99  -Werror-implicit-function-declaration -c fake_osx_rego_server.c
+gcc -Wall -std=c99  -Werror-implicit-function-declaration -o bin/fake_osx_rego_server rego_funcs.o fake_osx_rego_server.o
+if [ $? -eq 0 ]; then
+        echo "Success!, bin/fake_osx_rego_server executable updated";
+else
+        echo "Failure!!!!";
+fi

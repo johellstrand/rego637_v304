@@ -101,7 +101,11 @@ int main( int argc, char* argv[] )
     
     if( argc > 1 ) delta_adjustment = atoi( argv[1] );
     
+#ifdef __APPLE__
+    int fd = open_serial( "/dev/ttyp3" );
+#else
     int fd = open_serial( "/dev/ttyUSB0" );
+#endif
     
     puts("");
     
