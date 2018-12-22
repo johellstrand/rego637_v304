@@ -88,31 +88,6 @@ typedef enum
     REC_HighDelta = 22
 } RegoErrCode;
 
-static char errcode_to_string[23][40] ={
-    "GT1SensorRadiatorReturn",
-    "GTOutdoorSensor",
-    "GT3HotWaterSensor",
-    "GT4MixingValveSensor",
-    "Fasföljdsfel",
-    "GT6CompressorSensor",
-    "GT8/GT9 Högt värmebärardelta",
-    "GT9HeatFluidIn",
-    "GT10ColdFluidIn",
-    "GT11ColdFluidOut",
-    "CompressorCircuitSwitch",
-    "ElectricalCassette",
-    "MB2PumpSwith",
-    "LP Pressostat låg",
-    "HighPressureSwitch",
-    "GT9 Hög retur",
-    "GT8HTFOutMax",
-    "GT10HTFInUnderLimit",
-    "GT11HTFOutUnderLimit",
-    "GT6CompressorSuperhHear",
-    "3PhaseIncorrect",
-    "PowerFailure",
-    "HighDelta"
-};
 
 #include <time.h>
 typedef struct
@@ -125,5 +100,6 @@ typedef struct
 // returns 0 on failure.
 int get_last_error( int fd, RegoError* re_p );
 int get_prev_to_last_error( int fd, RegoError* re_p );
+
 
 #endif

@@ -407,3 +407,5 @@ int get_prev_to_last_error( int fd, RegoError* re_p )
 {
     return get_vp_error( fd, RC_read_prev_error_line, re_p );
 }
+
+

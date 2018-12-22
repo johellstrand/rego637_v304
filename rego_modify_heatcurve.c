@@ -2,6 +2,31 @@
 #include <stdlib.h>
 #include "rego_funcs.h"
 
+static char errcode_to_string[23][40] ={
+    "GT1SensorRadiatorReturn",
+    "GTOutdoorSensor",
+    "GT3HotWaterSensor",
+    "GT4MixingValveSensor",
+    "Fasföljdsfel",
+    "GT6CompressorSensor",
+    "GT8/GT9 Högt värmebärardelta",
+    "GT9HeatFluidIn",
+    "GT10ColdFluidIn",
+    "GT11ColdFluidOut",
+    "CompressorCircuitSwitch",
+    "ElectricalCassette",
+    "MB2PumpSwith",
+    "LP Pressostat låg",
+    "HighPressureSwitch",
+    "GT9 Hög retur",
+    "GT8HTFOutMax",
+    "GT10HTFInUnderLimit",
+    "GT11HTFOutUnderLimit",
+    "GT6CompressorSuperhHear",
+    "3PhaseIncorrect",
+    "PowerFailure",
+    "HighDelta"
+};
 
 
 #if 0
@@ -127,8 +152,7 @@ int main( int argc, char* argv[] )
                     
                     // re-read the new value.
                     current_value = read_system_register( fd, rr );
-                    printf( "    New value is %d\n", current_value );
-
+                    printf( "Current value of heatcurve is now %d\n", current_value );
                 }
             }
         }
@@ -140,7 +164,7 @@ int main( int argc, char* argv[] )
             char buf[100];
             strftime(buf, sizeof buf, "%FT%TZ", gmtime(&re.occurence_time));
             printf("\t%s last error [%d:%s]\n", buf, re.code, errcode_to_string[re.code] );
-            for(int i = 0; i < 10 && v; i++)
+            for(int i = 0; i < 3 && v; i++)
             {
                 v = get_prev_to_last_error( fd, &re );
                 if( v )
