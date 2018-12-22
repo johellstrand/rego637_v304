@@ -94,11 +94,12 @@ static int parse_42byte_reply(const Rego42bReply* rp, int16_t* value )
 
 int main( int argc, char* argv[] )
 {
-    int          exit_status = EXIT_FAILURE;
-    int          delta_adjustment = 0;
-    int16_t      current_value;
+    int                exit_status = EXIT_FAILURE;
+    int                delta_adjustment = 0;
+    int16_t            current_value;
     RegoSystemRegister rr = RR_heatcurve;
-    
+    RegoError          re;
+
     if( argc > 1 ) delta_adjustment = atoi( argv[1] );
     
 #ifdef __APPLE__
@@ -115,7 +116,7 @@ int main( int argc, char* argv[] )
         if( current_value != INT16_MIN )
         {
             exit_status = EXIT_SUCCESS;
-            printf( "Current value is %d\n", current_value );
+            printf( "Current value of heatcurve is %d\n", current_value );
             if( delta_adjustment )
             {
                 current_value +=delta_adjustment;
@@ -131,6 +132,25 @@ int main( int argc, char* argv[] )
                 }
             }
         }
+        
+        // show last errors.
+        if( get_last_error( fd, &re ) )
+        {
+            int v = 1;
+            char buf[100];
+            strftime(buf, sizeof buf, "%FT%TZ", gmtime(&re.occurence_time));
+            printf("\t%s last error [%d:%s]\n", buf, re.code, errcode_to_string[re.code] );
+            for(int i = 0; i < 10 && v; i++)
+            {
+                v = get_prev_to_last_error( fd, &re );
+                if( v )
+                {
+                    strftime(buf, sizeof buf, "%FT%TZ", gmtime(&re.occurence_time));
+                    printf("\t%s Prev error [%d:%s]\n", buf, re.code, errcode_to_string[re.code] );
+                }
+            }
+        }
+
         close_serial( fd );
     }
     return exit_status;

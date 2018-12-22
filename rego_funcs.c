@@ -55,7 +55,7 @@ int server_open_serial(const char* port_p)
     cfsetispeed(&SerialPortSettings,B19200); /* Set Read  Speed as 9600                       */
     cfsetospeed(&SerialPortSettings,B19200); /* Set Write Speed as 9600                       */
     
-    cfmakeraw( &SerialPortSettings );
+//    cfmakeraw( &SerialPortSettings );
     
     SerialPortSettings.c_cc[VMIN] = 1;
     SerialPortSettings.c_cc[VTIME] = 20;
@@ -82,7 +82,7 @@ int open_serial(const char* port_p)
     
     /* Change /dev/ttyUSB0 to the one corresponding to your system */
     
-    fd = open( port_p, O_RDWR | O_NOCTTY | O_NDELAY);    /* ttyUSB0 is the FT232 based USB2SERIAL Converter   */
+    fd = open( port_p, O_RDWR | O_NOCTTY );    /* ttyUSB0 is the FT232 based USB2SERIAL Converter   */
     /* O_RDWR Read/Write access to serial port           */
     /* O_NOCTTY - No terminal will control the process   */
     /* O_NDELAY -Non Blocking Mode,Does not care about-  */
@@ -119,7 +119,10 @@ int open_serial(const char* port_p)
     SerialPortSettings.c_iflag &= ~(ICANON | ECHO | ECHOE | ISIG);  /* Non Cannonical mode                            */
     
     SerialPortSettings.c_oflag &= ~OPOST;/*No Output Processing*/
-    
+
+    SerialPortSettings.c_cc[VMIN] = 1;
+    SerialPortSettings.c_cc[VTIME] = 20;
+
     // set vmin and vtime. vtime to 20 and vmin to 1.
     // maybe use cfmakeraw() instaed?
     
@@ -160,22 +163,22 @@ void wait_for_response( int fd )
     if (retval == -1)
         perror("select()");
     else if (retval)
-        printf("Data is available now.\n");
+        fprintf( stderr, "Data is available now.\n");
     /* FD_ISSET(0, &rfds) will be true. */
     else
-        printf("..\n");
+        fprintf( stderr, "..\n");
 }
 
 
 int serial_read( int fd, uint8_t *buff_p, size_t buffsize)
 {
     int bytes_read = read( fd, buff_p, buffsize );
-    printf("read: ");
+    fprintf( stderr, "read: ");
     for(int i = 0; i < bytes_read; i++, buff_p++ )
     {
-        printf("%02x", *buff_p );
+        fprintf( stderr, "%02x", *buff_p );
     }
-    puts("");
+    fprintf( stderr, "\n");
     
     return bytes_read;
 }
@@ -229,12 +232,12 @@ static RegoRequest* format_request( RegoRequest* req_p, RegoCommandType ct, int 
 
 static int send_request( int fd, const RegoRequest* req_p )
 {
-    printf("write: ");
+    fprintf( stderr, "write: ");
     for(int i = 0; i < sizeof( *req_p ); i++ )
     {
-        printf("%02x", req_p->raw[i] );
+        fprintf( stderr, "%02x", req_p->raw[i] );
     }
-    puts("");
+    fprintf( stderr, "\n");
     
     return write( fd, req_p, sizeof( *req_p ) );
 }
@@ -367,14 +370,13 @@ static time_t parse_datetime( const uint8_t* dt_p )
     return ret;
 }
 
-
-int get_last_error( int fd, RegoError* re_p )
+static int get_vp_error( int fd, RegoCommandType ct, RegoError* re_p )
 {
     RegoRequest req;
     int16_t     value = 0;
     uint8_t     response[100];
     
-    format_request( &req, RC_read_last_error_line, 0, 0 );
+    format_request( &req, ct, 0, 0 );
     
     int bytes_written = send_request( fd, &req );
     
@@ -395,5 +397,13 @@ int get_last_error( int fd, RegoError* re_p )
         perror("write failed in get_last_error()");
     }
     return value;
+}
+int get_last_error( int fd, RegoError* re_p )
+{
+    return get_vp_error( fd, RC_read_last_error_line, re_p );
+}
 
+int get_prev_to_last_error( int fd, RegoError* re_p )
+{
+    return get_vp_error( fd, RC_read_prev_error_line, re_p );
 }

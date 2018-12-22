@@ -67,18 +67,18 @@ typedef enum
     REC_GTOutdoorSensor = 1,
     REC_GT3HotWaterSensor = 2,
     REC_GT4MixingValveSensor = 3,
-    REC_GT5RoomSensor = 4,
+    REC_GT5RoomSensor = 4, // Fasföljdsfel. ?
     REC_GT6CompressorSensor = 5,
-    REC_GT8HeatFluidOut = 6,
+    REC_GT8HeatFluidOut = 6, // GT8/GT9 Högt värmebärardelta.
     REC_GT9HeatFluidIn = 7,
     REC_GT10ColdFluidIn = 8,
     REC_GT11ColdFluidOut = 9,
     REC_CompressorCircuitSwitch = 10,
     REC_ElectricalCassette = 11,
     REC_MB2PumpSwith = 12,
-    REC_LowPressureSwitch = 13,
+    REC_LowPressureSwitch = 13, // LP Pressostat låg.
     REC_HighPressureSwitch = 14,
-    REC_GT9HighReturn = 15,
+    REC_GT9HighReturn = 15, // GT9 Hög retur.
     REC_GT8HTFOutMax = 16,
     REC_GT10HTFInUnderLimit = 17,
     REC_GT11HTFOutUnderLimit = 18,
@@ -87,6 +87,32 @@ typedef enum
     REC_PowerFailure = 21,
     REC_HighDelta = 22
 } RegoErrCode;
+
+static char errcode_to_string[23][40] ={
+    "GT1SensorRadiatorReturn",
+    "GTOutdoorSensor",
+    "GT3HotWaterSensor",
+    "GT4MixingValveSensor",
+    "Fasföljdsfel",
+    "GT6CompressorSensor",
+    "GT8/GT9 Högt värmebärardelta",
+    "GT9HeatFluidIn",
+    "GT10ColdFluidIn",
+    "GT11ColdFluidOut",
+    "CompressorCircuitSwitch",
+    "ElectricalCassette",
+    "MB2PumpSwith",
+    "LP Pressostat låg",
+    "HighPressureSwitch",
+    "GT9 Hög retur",
+    "GT8HTFOutMax",
+    "GT10HTFInUnderLimit",
+    "GT11HTFOutUnderLimit",
+    "GT6CompressorSuperhHear",
+    "3PhaseIncorrect",
+    "PowerFailure",
+    "HighDelta"
+};
 
 #include <time.h>
 typedef struct
@@ -98,5 +124,6 @@ typedef struct
 
 // returns 0 on failure.
 int get_last_error( int fd, RegoError* re_p );
+int get_prev_to_last_error( int fd, RegoError* re_p );
 
 #endif
