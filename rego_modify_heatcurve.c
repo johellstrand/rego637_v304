@@ -155,6 +155,10 @@ int main( int argc, char* argv[] )
                     printf( "Current value of heatcurve is now %d\n", current_value );
                 }
             }
+            
+            current_value = read_system_register( fd, RR_heatcurve_fineadj );
+            if( current_value != INT16_MIN )
+                printf( "Current value of heatcurve fineadjust is %d\n", current_value );
         }
         
         // show last errors.
